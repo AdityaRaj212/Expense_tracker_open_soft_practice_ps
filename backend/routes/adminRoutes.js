@@ -79,7 +79,7 @@ router.delete('/users/:userId', authenticate, adminMiddleware, async (req, res) 
 });
 
 //gets total users and active users
-router.get('/analytics',authenticate, async (req, res) => {
+router.get('/analytics', authenticate, async (req, res) => {
   try {
     const userCount = await User.count();
     const activeUsers = await User.count({ where: { isActive: true } });
@@ -95,7 +95,7 @@ router.get('/analytics',authenticate, async (req, res) => {
 });
 
 // Get total number of expenses added
-router.get('/total-expenses',authenticate, async (req, res) => {
+router.get('/total-expenses', authenticate, async (req, res) => {
   try {
     const totalExpenses = await Expense.count();
     res.json({ totalExpenses });
@@ -105,9 +105,9 @@ router.get('/total-expenses',authenticate, async (req, res) => {
 });
 
 // Get net amount of transactions stored
-router.get('/net',authenticate, async (req, res) => {
+router.get('/net', authenticate, async (req, res) => {
   try {
-    const netAmount = await Expense.sum('amount'); 
+    const netAmount = await Expense.sum('amount');
     res.json({ netAmount });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch net amount', error: err.message });
@@ -115,7 +115,7 @@ router.get('/net',authenticate, async (req, res) => {
 });
 
 // Get expense by date
-router.get('/by-date', authenticate,  async (req, res) => {
+router.get('/by-date', authenticate, async (req, res) => {
   console.log(req.user);
 
   try {
@@ -147,6 +147,53 @@ router.get('/by-date', authenticate,  async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch expenses by date', error: error.message });
   }
 });
+
+// Get users data in a formatted way
+router.get('/users/all-expenses', async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'name']
+    });
+
+    // Then, get expenses for all users and format the response
+    const formattedResponse = await Promise.all(users.map(async (user) => {
+      const expenses = await Expense.findAll({
+        where: { userId: user.id },
+        attributes: ['id', 'amount', 'description', 'category', 'type', 'paymentMethod', 'date'],
+        order: [['date', 'DESC']]
+      });
+
+      return {
+        userId: user.id,
+        name: user.name,
+        expenses: expenses.map(expense => ({
+          id: expense.id,
+          amount: expense.amount,
+          description: expense.description,
+          category: expense.category,
+          type: expense.type,
+          paymentMethod: expense.paymentMethod,
+          date: new Date(expense.date).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })
+        }))
+      };
+    }));
+
+    res.json({"users": formattedResponse});
+  } catch (error) {
+    console.error('Error fetching all users expenses:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
+
+
 
 
 

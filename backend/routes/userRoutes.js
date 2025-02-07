@@ -30,21 +30,4 @@ router.get('/me', authenticate, async (req, res) => {
     }
 });
 
-router.post('/add', authenticate, async (req, res) => {
-  const { amount, description, category, paymentMethod, userId } = req.body;
-
-  try {
-    const expense = await Expense.create({
-      amount,
-      description,
-      category,
-      paymentMethod,
-      userId,
-    });
-    res.status(201).json({ expense });
-  } catch (err) {
-    res.status(400).json({ message: 'Failed to add expense', error: err.message });
-  }
-});
-
 export default router;

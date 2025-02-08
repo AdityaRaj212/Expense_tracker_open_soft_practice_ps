@@ -1,4 +1,5 @@
 import express from 'express';
+import { Sequelize, Op } from 'sequelize';
 import User from './../models/user.js';
 import Role from './../models/role.js';
 import Expense from '../models/expense.js';
@@ -162,7 +163,6 @@ router.get('/by-category', authenticate, async (req, res) => {
   }
 });
 
-
 router.get('/users/all-expenses', async (req, res) => {
   try {
     const users = await User.findAll({
@@ -231,7 +231,7 @@ router.get('/total-expenses', authenticate, adminMiddleware, async (req, res) =>
   }
 });
 
-router.get('/income-expense', authenticate, adminMiddleware, async (req, res) => {
+router.get('/income-expense', authenticate, async (req, res) => {
   try {
     const totalIncome = await Expense.sum('amount', { where: { type: 'income' } });
     const totalExpense = await Expense.sum('amount', { where: { type: 'expense' } });
@@ -283,34 +283,37 @@ router.get('/active-users-trend', authenticate, adminMiddleware, async (req, res
   }
 });
 
-router.get('/top-spenders', authenticate, adminMiddleware, async (req, res) => {
+router.get("/top-spenders", authenticate, async (req, res) => {
   try {
+    // Aggregate expenses per user
     const topSpenders = await Expense.findAll({
       attributes: [
-        'userId',
-        [Sequelize.fn('SUM', Sequelize.col('amount')), 'totalSpent'],
+        "userId",
+        [Sequelize.fn("COALESCE", Sequelize.fn("SUM", Sequelize.col("amount")), 0), "totalSpent"], // Handle null values
       ],
-      where: { type: 'expense' },
-      group: ['userId'],
-      order: [[Sequelize.literal('totalSpent'), 'DESC']],
+      where: { type: "expense" }, // Ensure only expenses are counted
+      group: ["userId"],
+      order: [[Sequelize.literal('"totalSpent"'), "DESC"]],
       limit: 5,
       raw: true,
     });
 
+    // Fetch user names for the top spenders
     const topSpendersWithNames = await Promise.all(
       topSpenders.map(async (spender) => {
-        const user = await User.findByPk(spender.userId, { attributes: ['name'] });
-        return { ...spender, name: user ? user.name : 'Unknown User' };
+        const user = await User.findByPk(spender.userId, { attributes: ["name"] });
+        return { ...spender, name: user ? user.name : "Unknown User" };
       })
     );
 
     res.json(topSpendersWithNames);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch top spenders', error: err.message });
+    console.error("Error fetching top spenders:", err);
+    res.status(500).json({ message: "Failed to fetch top spenders", error: err.message });
   }
 });
 
-router.get('/average-expense', authenticate, adminMiddleware, async (req, res) => {
+router.get('/average-expense', authenticate, async (req, res) => {
   try {
     const totalUsers = await User.count();
     const totalExpense = await Expense.sum('amount', { where: { type: 'expense' } });

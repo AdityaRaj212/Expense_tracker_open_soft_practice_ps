@@ -2,9 +2,11 @@ import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import Chart from "chart.js/auto";
 import { useAuth } from "../context/AuthContext";
+import { Pie } from 'react-chartjs-2';
+import Loading from "./Loading";
 
 const AdminAnalytics = () => {
-  const { apiUrl } = useAuth();
+  const { apiUrl, loading } = useAuth();
   const [analytics, setAnalytics] = useState({});
   const [usersExpenses, setUsersExpenses] = useState([]);
   const [expensesByDate, setExpensesByDate] = useState([]);
@@ -14,7 +16,9 @@ const AdminAnalytics = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [expensesByMonth, setExpensesByMonth] = useState({});
   const [expensesByCategory, setExpensesByCategory] = useState({});
-
+  const [topSpenders, setTopSpenders] = useState([]);
+  const [avgExpense, setAvgExpense] = useState(0);
+  const [dataLoading, setDataLoading] = useState(false);
 
 
   useEffect(() => {
@@ -56,31 +60,63 @@ const AdminAnalytics = () => {
 
   const fetchAnalytics = async () => {
     try {
+      setDataLoading(true);
       const token = localStorage.getItem("token");
 
-      const [usersRes, expensesRes, netRes, usersExpensesRes, expensesByDateRes, expensesByCategoryRes] = await Promise.all([
+      const [usersRes, expensesRes, netRes, usersExpensesRes, expensesByDateRes, expensesByCategoryRes, incomeExpenseRes, topSpendersRes, avgExpenseRes] = await Promise.all([
         axios.get(apiUrl + "/api/admin/analytics", { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(apiUrl + "/api/admin/total-expenses", { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(apiUrl + "/api/admin/net", { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(apiUrl + "/api/admin/users/all-expenses", { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(apiUrl + "/api/admin/by-date", { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(apiUrl + "/api/admin/by-category", { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(apiUrl + "/api/admin/income-expense", { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(apiUrl + "/api/admin/top-spenders", { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(apiUrl + "/api/admin/average-expense", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       setAnalytics({
         totalUsers: usersRes.data.totalUsers,
         activeUsers: usersRes.data.activeUsers,
         totalExpenses: expensesRes.data.totalExpenses,
+        income: incomeExpenseRes.data.totalIncome,
+        expense: incomeExpenseRes.data.totalExpense,
         netAmount: netRes.data.netAmount,
       });
-
+      console.log('top spenders: ', topSpendersRes.data);
       setUsersExpenses(usersExpensesRes.data.users);
       setExpensesByDate(expensesByDateRes.data.expensesByDate);
       setExpensesByCategory(expensesByCategoryRes.data.expensesByCategory);
+      setTopSpenders(topSpendersRes.data);
+      setAvgExpense(avgExpenseRes.data.avgExpensePerUser);
     } catch (error) {
       console.error("Error fetching analytics:", error);
+    } finally {
+      setDataLoading(false);
     }
   };
+
+  const incomeExpenseData = {
+    labels: ['Income', 'Expense'],
+    datasets: [
+      {
+        data: [analytics.income, analytics.expense],
+        backgroundColor: ['#4CAF50', '#F44336'], // Green for income, Red for expenses
+        hoverBackgroundColor: ['#388E3C', '#D32F2F']
+      }
+    ]
+  };
+
+  const spendersData = {
+    labels: topSpenders?.map((spender) => spender.name),
+    datasets: [
+      {
+        data: topSpenders?.map((spender) => spender.totalSpent),
+        backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4CAF50", "#F44336"],
+      },
+    ],
+  };
+  
 
   // Function to filter expenses based on the selected month
   const filterExpensesByMonth = () => {
@@ -223,101 +259,173 @@ const AdminAnalytics = () => {
     }
   };
   
+  if(loading || dataLoading) return(<Loading />);
 
   return (
-    <div className="p-4 md:p-6 bg-gray-900 text-gray-100 min-h-screen">
+    <div className="p-4 md:p-6 bg-gray-900 text-gray-100 min-h-screen ">
       <h2 className="text-2xl md:text-3xl font-semibold mb-6">Admin Analytics Dashboard</h2>
 
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gray-800 p-4 rounded-md shadow-md">
-          <h3 className="text-lg font-semibold text-gray-300">Total Users</h3>
-          <p className="text-2xl font-bold">{analytics.totalUsers}</p>
-        </div>
-        <div className="bg-gray-800 p-4 rounded-md shadow-md">
-          <h3 className="text-lg font-semibold text-gray-300">Active Users</h3>
-          <p className="text-2xl font-bold">{analytics.activeUsers}</p>
-        </div>
+        {[
+          { title: "Total Users", value: analytics.totalUsers },
+          { title: "Active Users", value: analytics.activeUsers },
+          { title: "Avg. Expense/User", value: '₹ ' + avgExpense },
+        ].map((item, index) => (
+          <div
+            key={index}
+            className="relative bg-gradient-to-r from-gray-900 to-gray-700 p-6 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
+          >
+            {/* Decorative Glow */}
+            <div className="absolute inset-0 bg-gray-900 opacity-20 rounded-lg blur-lg"></div>
+            
+            <h3 className="text-xl font-semibold text-gray-300 relative z-10">
+              {item.title}
+            </h3>
+            <p className="text-3xl font-bold text-white mt-2 relative z-10">
+              {item.value}
+            </p>
+          </div>
+        ))}
       </div>
 
-      {/* Expenses by Day Bar Chart */}
-      <div className="bg-gray-800 mt-8 p-4 rounded-md shadow-md">
-        <h3 className="text-lg font-semibold mb-4">Expenses Per Day</h3>
+      <div className="relative bg-gradient-to-r from-purple-900 to-indigo-800 p-6 rounded-lg shadow-lg transition-all duration-300 transform hover:shadow-2xl mt-4">
+        {/* Decorative Glow */}
+        <div className="absolute inset-0 bg-purple-900 opacity-20 rounded-lg blur-lg"></div>
 
-        {/* Radio Buttons for Display Option */}
-        <div className="mb-4 flex gap-4">
-          <div className="flex flex-wrap gap-4 mt-4">
-            {[
-              { value: "count", label: "Show No. of Expenses" },
-              { value: "amount", label: "Show Total Amount" },
-              { value: "both", label: "Show Both" },
-            ].map((option) => (
-              <label key={option.value} className="relative cursor-pointer">
-                <input
-                  type="radio"
-                  value={option.value}
-                  checked={displayOption === option.value}
-                  onChange={(e) => setDisplayOption(e.target.value)}
-                  className="hidden peer"
-                />
-                <span className="px-4 py-2 text-sm font-medium rounded-full border border-gray-500 bg-gray-700 text-gray-300 peer-checked:bg-blue-500 peer-checked:text-white transition-all duration-300 ease-in-out hover:bg-gray-600 hover:border-gray-400">
-                  {option.label}
-                </span>
-              </label>
-            ))}
+        <h3 className="text-xl font-semibold text-gray-300 relative z-10">🏆 Top Spenders</h3>
+
+        <ul className="mt-4 space-y-3 relative z-10">
+          {topSpenders?.length > 0 ? (
+            topSpenders.map((spender, index) => {
+              const rankBadges = ["🥇", "🥈", "🥉"]; // Gold, Silver, Bronze badges
+              const isTopThree = index < 3;
+              return (
+                <li
+                  key={index}
+                  className={`flex justify-between items-center p-3 rounded-md 
+                  ${isTopThree ? "bg-gradient-to-r from-gray-800 to-gray-700 shadow-lg" : "bg-gray-800"} 
+                  hover:scale-105 transition-transform duration-200`}
+                >
+                  {/* Rank Badge */}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-lg font-bold ${isTopThree ? "text-yellow-300" : "text-gray-400"}`}>
+                      {isTopThree ? rankBadges[index] : `#${index + 1}`}
+                    </span>
+                    <span className="text-gray-200 font-medium">{spender.name}</span>
+                  </div>
+
+                  {/* Amount Spent */}
+                  <span className="font-bold text-green-400">₹{spender.totalSpent}</span>
+                </li>
+              );
+            })
+          ) : (
+            <p className="text-gray-400 italic">No data available</p>
+          )}
+        </ul>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-4">
+
+      </div>
+        {/* Expenses by Day Bar Chart */}
+        <div className="bg-gray-800 mt-8 p-4 rounded-md shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Expenses Per Day</h3>
+
+          {/* Radio Buttons for Display Option */}
+          <div className="mb-4 flex gap-4">
+            <div className="flex flex-wrap gap-4 mt-4">
+              {[
+                { value: "count", label: "Show No. of Expenses" },
+                { value: "amount", label: "Show Total Amount" },
+                { value: "both", label: "Show Both" },
+              ].map((option) => (
+                <label key={option.value} className="relative cursor-pointer">
+                  <input
+                    type="radio"
+                    value={option.value}
+                    checked={displayOption === option.value}
+                    onChange={(e) => setDisplayOption(e.target.value)}
+                    className="hidden peer"
+                  />
+                  <span className="px-4 py-2 text-sm font-medium rounded-full border border-gray-500 bg-gray-700 text-gray-300 peer-checked:bg-blue-500 peer-checked:text-white transition-all duration-300 ease-in-out hover:bg-gray-600 hover:border-gray-400">
+                    {option.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+
           </div>
 
-        </div>
-
-        {/* Dropdown for Month Selection */}
-        <select
-          className="bg-gray-700 text-gray-100 p-2 rounded-md mb-4"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(Number(e.target.value))}
-        >
-          {[...Array(12)].map((_, index) => (
-            <option key={index + 1} value={index + 1}>
-              {new Date(0, index).toLocaleString("en", { month: "long" })}
-            </option>
-          ))}
-        </select>
-
-        {/* Chart Container */}
-        <div className="w-full h-80">
-          <canvas id="expensesBarChart"></canvas>
-        </div>
-      </div>
-
-      <div className="bg-gray-800 mt-8 p-4 rounded-md shadow-md">
-        <h3 className="text-lg font-semibold mb-4">Monthly Expenses for {selectedYear}</h3>
-        
-        <select
-          className="bg-gray-700 text-gray-100 p-2 rounded-md mb-4"
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(Number(e.target.value))}
-        >
-          {[...Array(5)].map((_, index) => {
-            const year = new Date().getFullYear() - index;
-            return (
-              <option key={year} value={year}>
-                {year}
+          {/* Dropdown for Month Selection */}
+          <select
+            className="bg-gray-700 text-gray-100 p-2 rounded-md mb-4"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          >
+            {[...Array(12)].map((_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {new Date(0, index).toLocaleString("en", { month: "long" })}
               </option>
-            );
-          })}
-        </select>
-        
-        <div className="w-full h-80">
-          <canvas id="monthlyExpensesLineChart"></canvas>
-        </div>
-      </div>
+            ))}
+          </select>
 
-      {/* Expenses by Category Pie Chart */}
-<div className="bg-gray-800 mt-8 p-4 rounded-md shadow-md">
-  <h3 className="text-lg font-semibold mb-4">Expenses by Category</h3>
-  <div className="w-full h-80">
-    <canvas id="expensesPieChart"></canvas>
-  </div>
-</div>
+          {/* Chart Container */}
+          <div className="w-full h-80">
+            <canvas id="expensesBarChart"></canvas>
+          </div>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-4">
+
+          <div className="w-full lg:w-3/4 bg-gray-800 mt-8 p-4 rounded-md shadow-md">
+            <h3 className="text-lg font-semibold mb-4">Monthly Expenses for {selectedYear}</h3>
+            
+            <select
+              className="bg-gray-700 text-gray-100 p-2 rounded-md mb-4"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+            >
+              {[...Array(5)].map((_, index) => {
+                const year = new Date().getFullYear() - index;
+                return (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                );
+              })}
+            </select>
+            
+            <div className="w-full h-80">
+              <canvas id="monthlyExpensesLineChart"></canvas>
+            </div>
+          </div>
+
+          {/* Expenses by Category Pie Chart */}
+          <div className="w-full lg:w-1/4 bg-gray-800 mt-8 p-4 rounded-md shadow-md">
+            <h3 className="text-lg font-semibold mb-4">Expenses by Category</h3>
+            <div className="w-full h-80">
+              <canvas id="expensesPieChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="w-full lg:w-1/2 bg-gray-800 mt-8 p-4 rounded-md shadow-md">
+            <h3 className="text-lg font-semibold mb-4 text-white">Expenses by Category</h3>
+            <div className="w-full h-80 flex justify-center items-center">
+              <Pie data={incomeExpenseData} />
+            </div>
+          </div>
+
+          <div className="w-full lg:w-1/2 bg-gray-800 mt-8 p-4 rounded-md shadow-md">
+            <h3 className="text-lg font-semibold mb-4 text-white">Top Spenders</h3>
+            <div className="w-full h-80 flex justify-center items-center">
+              <Pie data={spendersData} />
+            </div>
+          </div>
+        </div>
 
     </div>
   );

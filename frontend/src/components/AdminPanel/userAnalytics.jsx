@@ -16,6 +16,7 @@ const UserAnalytics = () => {
 
   const handleUserClick = (user) => {
     setSelectedUser(user);
+    console.log('selected user: ', user);
   };
 
   const closeModal = () => {
@@ -48,10 +49,17 @@ const UserAnalytics = () => {
                   <td className="p-3 border-b border-[#2a3a4f]">{user.userId}</td>
                   <td className="p-3 border-b border-[#2a3a4f]">{user.name}</td>
                   <td className="p-3 border-b border-[#2a3a4f]">
-                    {lastTransaction ? lastTransaction.date : "N/A"}
+                    {lastTransaction ? lastTransaction.date : "No recent transaction"}
                   </td>
                   <td className="p-3 border-b border-[#2a3a4f] ">
-                    <span className="bg-green-600 font-semibold rounded-full flex justify-center w-[10%]">₹{lastTransaction ? lastTransaction.amount : "N/A"}</span>
+                    {/* <span className="bg-green-600 font-semibold rounded-full flex justify-center w-[10%]">₹{lastTransaction ? lastTransaction.amount : "N/A"}</span> */}
+                    <span className={`font-semibold rounded-full flex items-center justify-center w-[10%] px-3 py-1 
+                      ${lastTransaction?.amount ? "bg-green-600 text-white" : "bg-gray-400 text-gray-900 italic"}`}>
+                      {lastTransaction?.amount 
+                        ? `₹${lastTransaction.amount}` 
+                        : "N/A"}
+                    </span>
+
 
                   </td>
                 </tr>
@@ -61,57 +69,73 @@ const UserAnalytics = () => {
         </table>
 
         {selectedUser && (
-          <div className="fixed inset-0 mt-16 bg-black/80 bg-opacity-75 flex justify-center items-center">
-            <div className="bg-gray-900 p-6 rounded-lg shadow-xl w-1/2 md:w-4/5 text-gray-200">
-              <h3 className="text-xl font-bold mb-5">User Details</h3>
-              <p className="mb-2">
-                <strong>User ID:</strong> {selectedUser.userId}
-              </p>
-              <p className="mb-4">
-                <strong>Name:</strong> {selectedUser.name}
-              </p>
-              <h4 className="text-lg font-semibold mt-4 mb-2">Transactions:</h4>
-              <table className="w-full border-collapse rounded-lg overflow-hidden">
-                <thead className="bg-gray-500 text-lg">
-                  <tr>
-                    <th className="p-2 text-left border-b border-[#2a3a4f] font-semibold">Amount</th>
-                    <th className="p-2 text-left border-b border-[#2a3a4f] font-semibold">Description</th>
-                    <th className="p-2 text-left border-b border-[#2a3a4f] font-semibold">Category</th>
-                    <th className="p-2 text-left border-b border-[#2a3a4f] font-semibold">Type</th>
-                    <th className="p-2 text-left border-b border-[#2a3a4f] font-semibold">Payment Method</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-gray-800">
-                  {selectedUser.expenses.map((expense) => (
-                    <tr key={expense.id} className="border-b border-[#2a3a4f] hover:bg-gray-700">
-                      <td className="p-2"><span className="bg-green-600 font-semibold rounded-full flex justify-center w-[50%]">₹{expense.amount}</span>
-                      </td>
-                      <td className="p-2">{expense.description}</td>
-                      <td className="p-2">{expense.category}</td>
-                      <td className="p-2">
-                        <span className={`px-3 py-1 rounded-full text-sm ${expense.type === 'income' ? 'bg-green-700' : 'bg-red-600'
-                          }`}>
-                          {expense.type}
-                        </span>
-                      </td>
-                      <td className="p-2">
-                        <span className="bg-blue-600 px-3 py-1 rounded-full text-sm">
-                          {expense.paymentMethod}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <button
-                className="mt-6 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+          <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50">
+            <div className="bg-gray-900 p-6 rounded-lg shadow-xl w-11/12 md:w-4/5 max-w-3xl text-gray-200 relative">
+              <button 
+                className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl transition duration-300 
+                          hover:bg-gray-700 p-2 rounded-full"
                 onClick={closeModal}
               >
-                Close
+                ❌
               </button>
+
+              <h3 className="text-2xl font-bold mb-5 text-center">User Details</h3>
+              <div className="mb-4">
+                <p><strong>User ID:</strong> {selectedUser.userId}</p>
+                <p><strong>Name:</strong> {selectedUser.name}</p>
+              </div>
+
+              <h4 className="text-xl font-semibold mt-6 mb-3">Transactions</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse rounded-lg overflow-hidden">
+                  <thead className="bg-gray-700 text-gray-100">
+                    <tr>
+                      {["Amount", "Description", "Category", "Type", "Payment Method"].map((header) => (
+                        <th key={header} className="p-3 text-left border-b border-gray-600 font-semibold">
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-gray-800 divide-y divide-gray-700">
+                    {selectedUser.expenses.length > 0 ? (
+                      selectedUser.expenses.map((expense) => (
+                        <tr key={expense.id} className="hover:bg-gray-700 transition duration-300">
+                          <td className="p-3">
+                            <span className="bg-green-600 text-white font-semibold px-3 py-1 rounded-full">
+                              ₹{expense.amount}
+                            </span>
+                          </td>
+                          <td className="p-3">{expense.description==='' ? 'No Description' : expense.description}</td>
+                          <td className="p-3">{expense.category}</td>
+                          <td className="p-3">
+                            <span className={`px-3 py-1 rounded-full text-sm text-white ${
+                              expense.type === "income" ? "bg-green-700" : "bg-red-600"
+                            }`}>
+                              {expense.type}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <span className="bg-blue-600 px-3 py-1 rounded-full text-sm text-white">
+                              {expense.paymentMethod}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="p-4 text-center text-gray-400">
+                          No transactions found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
 

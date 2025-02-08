@@ -5,6 +5,7 @@ import "./App.css";
 import { AuthProvider } from "./context/AuthContext";
 import UserDashboard from "./pages/Dashboard2";
 import UserAnalytics from "./components/AdminPanel/userAnalytics";
+import AdminAnalytics from "./pages/AdminAnalytics";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           {/* <Route path="/" element={<Dashboard />} /> */}
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/user-analytics" element={<UserAnalytics />} />
+          <Route path="/platform-analytics" element={<AdminAnalytics />} />
         </Routes>
       </Router>
     </AuthProvider>

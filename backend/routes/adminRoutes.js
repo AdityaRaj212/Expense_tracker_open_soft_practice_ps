@@ -78,7 +78,6 @@ router.delete('/users/:userId', authenticate, adminMiddleware, async (req, res) 
   }
 });
 
-//gets total users and active users
 router.get('/analytics', authenticate, async (req, res) => {
   try {
     const userCount = await User.count();
@@ -94,7 +93,6 @@ router.get('/analytics', authenticate, async (req, res) => {
   }
 });
 
-// Get total number of expenses added
 router.get('/total-expenses', authenticate, async (req, res) => {
   try {
     const totalExpenses = await Expense.count();
@@ -104,7 +102,6 @@ router.get('/total-expenses', authenticate, async (req, res) => {
   }
 });
 
-// Get net amount of transactions stored
 router.get('/net', authenticate, async (req, res) => {
   try {
     const netAmount = await Expense.sum('amount');
@@ -114,19 +111,16 @@ router.get('/net', authenticate, async (req, res) => {
   }
 });
 
-// Get expense by date
 router.get('/by-date', authenticate, async (req, res) => {
-  console.log(req.user);
 
   try {
     const expenses = await Expense.findAll({
-      order: [['date', 'DESC']], // Sort by date 
+      order: [['date', 'DESC']],
     });
 
-    // Group by date
     const expensesByDate = {};
     expenses.forEach(expense => {
-      const dateKey = expense.date.toISOString().split('T')[0]; // Extract YYYY-MM-DD
+      const dateKey = expense.date.toISOString().split('T')[0]; 
       if (!expensesByDate[dateKey]) {
         expensesByDate[dateKey] = [];
       }
@@ -148,14 +142,33 @@ router.get('/by-date', authenticate, async (req, res) => {
   }
 });
 
-// Get users data in a formatted way
+router.get('/by-category', authenticate, async (req, res) => {
+  try {
+    const expenses = await Expense.findAll();
+
+    const expensesByCategory = {};
+    expenses.forEach(expense => {
+      const category = expense.category || "Uncategorized"; // Handle undefined categories
+      if (!expensesByCategory[category]) {
+        expensesByCategory[category] = 0;
+      }
+      expensesByCategory[category] += 1;
+    });
+
+    res.json({ expensesByCategory });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch expenses by category', error: error.message });
+  }
+});
+
+
 router.get('/users/all-expenses', async (req, res) => {
   try {
     const users = await User.findAll({
       attributes: ['id', 'name']
     });
 
-    // Then, get expenses for all users and format the response
     const formattedResponse = await Promise.all(users.map(async (user) => {
       const expenses = await Expense.findAll({
         where: { userId: user.id },
@@ -189,6 +202,124 @@ router.get('/users/all-expenses', async (req, res) => {
       error: 'Internal server error',
       details: error.message
     });
+  }
+});
+
+router.get('/analytics', authenticate, adminMiddleware, async (req, res) => {
+  try {
+    const userCount = await User.count();
+    const activeUsers = await User.count({ where: { isActive: true } });
+
+    res.json({
+      totalUsers: userCount,
+      activeUsers,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.get('/total-expenses', authenticate, adminMiddleware, async (req, res) => {
+  try {
+    const totalExpenses = await Expense.count();
+    const netAmount = await Expense.sum('amount');
+
+    res.json({ totalExpenses, netAmount });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch total expenses', error: err.message });
+  }
+});
+
+router.get('/income-expense', authenticate, adminMiddleware, async (req, res) => {
+  try {
+    const totalIncome = await Expense.sum('amount', { where: { type: 'income' } });
+    const totalExpense = await Expense.sum('amount', { where: { type: 'expense' } });
+
+    res.json({ totalIncome: totalIncome || 0, totalExpense: totalExpense || 0 });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch income and expenses', error: err.message });
+  }
+});
+
+router.get('/expense-categories', authenticate, adminMiddleware, async (req, res) => {
+  try {
+    const expensesByCategory = await Expense.findAll({
+      attributes: [
+        'category',
+        [Sequelize.fn('SUM', Sequelize.col('amount')), 'totalAmount'],
+      ],
+      group: ['category'],
+      raw: true,
+    });
+
+    res.json(expensesByCategory);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch category breakdown', error: err.message });
+  }
+});
+
+router.get('/active-users-trend', authenticate, adminMiddleware, async (req, res) => {
+  try {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const activeUsersTrend = await User.findAll({
+      attributes: [
+        [Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), '%Y-%m'), 'month'],
+        [Sequelize.fn('COUNT', Sequelize.col('id')), 'userCount'],
+      ],
+      where: {
+        createdAt: { [Op.gte]: sixMonthsAgo },
+      },
+      group: ['month'],
+      order: [['month', 'ASC']],
+      raw: true,
+    });
+
+    res.json(activeUsersTrend);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch active users trend', error: err.message });
+  }
+});
+
+router.get('/top-spenders', authenticate, adminMiddleware, async (req, res) => {
+  try {
+    const topSpenders = await Expense.findAll({
+      attributes: [
+        'userId',
+        [Sequelize.fn('SUM', Sequelize.col('amount')), 'totalSpent'],
+      ],
+      where: { type: 'expense' },
+      group: ['userId'],
+      order: [[Sequelize.literal('totalSpent'), 'DESC']],
+      limit: 5,
+      raw: true,
+    });
+
+    const topSpendersWithNames = await Promise.all(
+      topSpenders.map(async (spender) => {
+        const user = await User.findByPk(spender.userId, { attributes: ['name'] });
+        return { ...spender, name: user ? user.name : 'Unknown User' };
+      })
+    );
+
+    res.json(topSpendersWithNames);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch top spenders', error: err.message });
+  }
+});
+
+router.get('/average-expense', authenticate, adminMiddleware, async (req, res) => {
+  try {
+    const totalUsers = await User.count();
+    const totalExpense = await Expense.sum('amount', { where: { type: 'expense' } });
+
+    const avgExpensePerUser = totalUsers ? totalExpense / totalUsers : 0;
+
+    res.json({ avgExpensePerUser });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch average expense per user', error: err.message });
   }
 });
 

@@ -31,7 +31,7 @@ const UserDashboard = () => {
 		category: "",
 		paymentMethod: "",
 	});	
-	const [expenseLoading, setExpenseLoading] = useState(false);
+	const [expenseLoading, setExpenseLoading] = useState(true);
 	const [editingExpense, setEditingExpense] = useState(null);
 
 	// Fetch Expenses
@@ -226,7 +226,7 @@ const UserDashboard = () => {
 	return (
 		<>
 			<Navbar />
-			<div className="min-h-screen bg-gray-900 text-white p-6 mt-22">
+			<div className="min-h-screen bg-gray-900 text-white p-6 mt-18">
 				<div className="bg-gray-800 p-6 rounded-lg shadow-md text-white mb-6 max-w-5xl mx-auto space-y-4">
 					<h3 className="text-xl font-semibold text-gray-300 mb-4">💰 General Info</h3>
 					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

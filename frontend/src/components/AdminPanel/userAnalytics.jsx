@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../Navbar";
+import { useAuth } from "../../context/AuthContext";
+import Loading from "../../pages/Loading";
+import AdminNavbar from "../AdminNavbar";
 
 const UserAnalytics = () => {
+  const { apiUrl, loading, user } = useAuth();
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/admin/users/all-expenses") //tried axios but was getting error
+    setDataLoading(true);
+    fetch(apiUrl + "/api/admin/users/all-expenses") //tried axios but was getting error
       .then((response) => response.json())
       .then((data) => {
         setUsers(data.users);
       })
-      .catch((error) => console.error("Error fetching data:", error));
+      .catch((error) => console.error("Error fetching data:", error))
+      .finally(()=>{
+        setDataLoading(false);
+      });
   }, []);
 
   const handleUserClick = (user) => {
@@ -23,10 +32,16 @@ const UserAnalytics = () => {
     setSelectedUser(null);
   };
 
+  if(loading || dataLoading) return (<Loading />);
+
+  if(!loading && !user){
+		return (<AuthPage />);
+	}
+
   return (
     <div className="min-h-screen bg-gray-900 ">
-      <Navbar />
-      <div className="p-6 z-50 mt-24 flex flex-col items-center">
+      <AdminNavbar />
+      <div className="p-6 z-50 mt-18 flex flex-col items-center">
         <h2 className="text-4xl font-bold mb-4 text-white">User Analytics</h2>
         <table className="w-full border-collapse mb-5 text-sm rounded-xl overflow-hidden ">
           <thead className="bg-gray-500 text-lg font-bold">
@@ -59,8 +74,6 @@ const UserAnalytics = () => {
                         ? `₹${lastTransaction.amount}` 
                         : "N/A"}
                     </span>
-
-
                   </td>
                 </tr>
               );

@@ -4,9 +4,10 @@ import Chart from "chart.js/auto";
 import { useAuth } from "../context/AuthContext";
 import { Pie } from 'react-chartjs-2';
 import Loading from "./Loading";
+import AdminNavbar from "../components/AdminNavbar";
 
 const AdminAnalytics = () => {
-  const { apiUrl, loading } = useAuth();
+  const { apiUrl, loading, user } = useAuth();
   const [analytics, setAnalytics] = useState({});
   const [usersExpenses, setUsersExpenses] = useState([]);
   const [expensesByDate, setExpensesByDate] = useState([]);
@@ -18,7 +19,7 @@ const AdminAnalytics = () => {
   const [expensesByCategory, setExpensesByCategory] = useState({});
   const [topSpenders, setTopSpenders] = useState([]);
   const [avgExpense, setAvgExpense] = useState(0);
-  const [dataLoading, setDataLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
 
 
   useEffect(() => {
@@ -83,7 +84,6 @@ const AdminAnalytics = () => {
         expense: incomeExpenseRes.data.totalExpense,
         netAmount: netRes.data.netAmount,
       });
-      console.log('top spenders: ', topSpendersRes.data);
       setUsersExpenses(usersExpensesRes.data.users);
       setExpensesByDate(expensesByDateRes.data.expensesByDate);
       setExpensesByCategory(expensesByCategoryRes.data.expensesByCategory);
@@ -261,8 +261,13 @@ const AdminAnalytics = () => {
   
   if(loading || dataLoading) return(<Loading />);
 
+  if(!loading && !user){
+		return (<AuthPage />);
+	}
+
   return (
     <div className="p-4 md:p-6 bg-gray-900 text-gray-100 min-h-screen ">
+      <AdminNavbar />
       <h2 className="text-2xl md:text-3xl font-semibold mb-6">Admin Analytics Dashboard</h2>
 
       {/* Analytics Cards */}
@@ -271,6 +276,7 @@ const AdminAnalytics = () => {
           { title: "Total Users", value: analytics.totalUsers },
           { title: "Active Users", value: analytics.activeUsers },
           { title: "Avg. Expense/User", value: '₹ ' + avgExpense },
+          { title: "Total amount stored", value: '₹ ' + analytics.netAmount },
         ].map((item, index) => (
           <div
             key={index}

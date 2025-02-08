@@ -16,8 +16,8 @@ function App() {
           <Route path="/" element={<UserDashboard />} />
           {/* <Route path="/" element={<Dashboard />} /> */}
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/user-analytics" element={<UserAnalytics />} />
-          <Route path="/platform-analytics" element={<AdminAnalytics />} />
+          <Route path="/admin/user-analytics" element={<UserAnalytics />} />
+          <Route path="/admin/platform-analytics" element={<AdminAnalytics />} />
         </Routes>
       </Router>
     </AuthProvider>

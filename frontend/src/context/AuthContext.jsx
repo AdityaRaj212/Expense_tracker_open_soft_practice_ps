@@ -22,8 +22,9 @@ export const AuthProvider = ({ children }) => {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 console.log('req: ', req);
-                console.log('user: ', req.data);
-                setUser(req.data);
+                let obj = {...req.data, role: req.data.roleId===1 ? 'admin': 'user'};
+                console.log('user: ', obj);
+                setUser({...req.data, role: req.data.roleId===1 ? 'admin': 'user'});
             } catch {
                 localStorage.removeItem("token");
                 setUser(null);
@@ -35,9 +36,9 @@ export const AuthProvider = ({ children }) => {
         fetchUser();
     }, []);
 
-    const signup = async (name, email, password) => {
+    const signup = async (name, email, password, role, otp) => {
         try {
-            const { data } = await axios.post(`${apiUrl}/api/auth/register`, { name, email, password });
+            const { data } = await axios.post(`${apiUrl}/api/auth/register`, { name, email, password, role, otp });
             console.log('Signup successful:', data);
             // After successful registration, log the user in automatically (optional)
             setUser(data.user);
@@ -54,7 +55,7 @@ export const AuthProvider = ({ children }) => {
             const { data } = await axios.post(`${apiUrl}/api/auth/login`, {email, password});
             console.log('response data: ', data);
             localStorage.setItem("token", data.token);
-            setUser(data.user);
+            setUser({...data.user, role: data.user.roleId===1 ? 'admin': 'user'});
             return true;
         } catch (error) {
             console.error("Login failed:", error.response?.data?.message || error.message);

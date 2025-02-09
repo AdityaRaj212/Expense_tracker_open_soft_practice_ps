@@ -88,7 +88,7 @@ const AdminAnalytics = () => {
       setExpensesByDate(expensesByDateRes.data.expensesByDate);
       setExpensesByCategory(expensesByCategoryRes.data.expensesByCategory);
       setTopSpenders(topSpendersRes.data);
-      setAvgExpense(avgExpenseRes.data.avgExpensePerUser);
+      setAvgExpense(parseFloat(avgExpenseRes.data.avgExpensePerUser).toFixed(2));
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {

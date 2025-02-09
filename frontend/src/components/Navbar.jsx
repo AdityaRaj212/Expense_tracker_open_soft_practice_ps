@@ -24,7 +24,7 @@ const Navbar = () => {
 
           {/* Desktop Links */}
           <div className="hidden md:flex space-x-6 text-gray-300">
-            <a href="/dashboard" className="hover:text-green-400 transition">
+            <a href="/" className="hover:text-green-400 transition">
               Dashboard
             </a>
             <a href="/transactions" className="hover:text-green-400 transition">

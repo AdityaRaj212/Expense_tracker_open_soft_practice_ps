@@ -15,8 +15,10 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: "http://localhost:5173",  // React frontend URL
-  credentials: true,  // Allow cookies and session sharing
+  origin: "*",  
+  // origin: "http://localhost:5173",  
+  methods: "GET,POST,PUT,DELETE",
+  credentials: true, 
 }));
 app.use(express.json());
 app.use(session({ secret: "Secret", resave: false, saveUninitialized: true }));

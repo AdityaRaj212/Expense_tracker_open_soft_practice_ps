@@ -1,3 +1,7 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -11,8 +15,8 @@ const OTP_MAP = new Map(); // Temporary OTP store
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "webdev.by.adi@gmail.com", // Your email
-    pass: "trbz xzrx inww cous", // Your app password
+    user: process.env.verification_email, 
+    pass: process.env.app_password, 
   },
 });
 

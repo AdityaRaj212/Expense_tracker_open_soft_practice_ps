@@ -3,6 +3,7 @@ import Navbar from "../Navbar";
 import { useAuth } from "../../context/AuthContext";
 import Loading from "../../pages/Loading";
 import AdminNavbar from "../AdminNavbar";
+import AuthPage from "../../pages/AuthPage";
 
 const UserAnalytics = () => {
   const { apiUrl, loading, user } = useAuth();

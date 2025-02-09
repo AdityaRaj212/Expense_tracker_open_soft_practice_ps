@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { Pie } from 'react-chartjs-2';
 import Loading from "./Loading";
 import AdminNavbar from "../components/AdminNavbar";
+import AuthPage from "./AuthPage";
 
 const AdminAnalytics = () => {
   const { apiUrl, loading, user } = useAuth();

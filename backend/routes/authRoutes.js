@@ -100,7 +100,7 @@ router.post('/google-login', async (req, res) => {
       }
 
       // Create a JWT token for the authenticated user
-      const jwtToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+      const jwtToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
           expiresIn: '1h',
       });
 

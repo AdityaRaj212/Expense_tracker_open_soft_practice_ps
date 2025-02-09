@@ -2,6 +2,8 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
+import axios from 'axios';
+import passport from "../config/passport.js";
 
 const router = express.Router();
 
@@ -34,5 +36,41 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ success: false, message: 'Login failed', error: err.message });
   }
 });
+
+router.post('/google-login', async (req, res) => {
+  const { token } = req.body;
+  
+
+  try {
+      // Verify the token with Google's OAuth API
+      const googleUser = await axios.get(`https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${token}`);
+      
+      const { sub: googleId, email, name } = googleUser.data;
+      
+      let user = await User.findOne({ where: { googleId } });
+      
+      if (!user) {
+          user = await User.create({
+              googleId,
+              name,
+              email,
+              password: "GooglePassword", // No password for OAuth users
+          });
+      }
+
+      // Create a JWT token for the authenticated user
+      const jwtToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+          expiresIn: '1h',
+      });
+
+      res.json({ token: jwtToken, user });
+  } catch (error) {
+      console.error('Google login error:', error);
+      res.status(500).json({ message: 'Something went wrong with Google login' });
+  }
+});
+
+
+
 
 export default router;

@@ -48,6 +48,17 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const googleLogin = async (data) => {
+        try {
+            localStorage.setItem("token", data.token);
+            setUser(data.user);
+            return true;
+        } catch (error) {
+            console.error("Google login failed:", error.response?.data?.message || error.message);
+            throw error;
+        }
+    };
+
     // Login function using basic auth format
     const login = async (email, password) => {
         try {
@@ -69,7 +80,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ apiUrl, user, login, signup, logout, loading }}>
+        <AuthContext.Provider value={{ apiUrl, user, login, signup, googleLogin, logout, loading }}>
             {!loading && children}
         </AuthContext.Provider>
     );

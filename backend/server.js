@@ -6,15 +6,25 @@ import authRoutes from './routes/authRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import session from "express-session";
+import passport from "./config/passport.js";
+import auth from './routes/auth.js';
 
 dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173",  // React frontend URL
+  credentials: true,  // Allow cookies and session sharing
+}));
 app.use(express.json());
+app.use(session({ secret: "Secret", resave: false, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use('/api/auth', authRoutes);
+app.use('/auth', auth);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);

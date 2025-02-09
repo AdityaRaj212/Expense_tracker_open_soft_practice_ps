@@ -31,7 +31,7 @@ const UserDashboard = () => {
 		category: "",
 		paymentMethod: "",
 	});	
-	const [expenseLoading, setExpenseLoading] = useState(true);
+	const [expenseLoading, setExpenseLoading] = useState(false);
 	const [editingExpense, setEditingExpense] = useState(null);
 
 	// Fetch Expenses

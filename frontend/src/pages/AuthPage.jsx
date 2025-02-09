@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import axios from "axios";
+
 
 const AuthPage = () => {
-  const { login, signup } = useAuth();
+  const { login, googleLogin, signup } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: "", password: "", name: "" });
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,49 @@ const AuthPage = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  useEffect(() => {
+    // Dynamically load the Google Sign-In script
+    const loadGoogleScript = () => {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.onload = () => {
+        google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID, // Use import.meta.env
+          callback: handleGoogleLogin,
+        });
+        google.accounts.id.renderButton(document.getElementById("google-login-btn"), {
+          theme: "outline",
+          size: "large",
+        });
+      };
+      document.body.appendChild(script);
+    };
+  
+    loadGoogleScript();
+  }, []);
+
+  const handleGoogleLogin = async (response) => {
+    try {
+      if (!response || !response.credential) {
+        throw new Error("Google login failed: No credential received");
+      }
+  
+      const res = await axios.post("http://localhost:5000/api/auth/google-login", {
+        token: response.credential,
+      });
+  
+      console.log("Google Login Success:", res.data);
+      // localStorage.setItem("token", res.data.token);
+      googleLogin(res.data);
+    } catch (error) {
+      console.error("Google login failed:", error);
+    }
+  };
+  
+ 
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,6 +148,22 @@ const AuthPage = () => {
             )}
           </button>
         </form>
+
+        <div id="google-login-btn" className=" mt-2 flex items-center justify-center bg-[#1a2332]">
+
+          <button 
+            onClick={handleGoogleLogin}
+            className="w-full bg-white text-gray-800 px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
+          >
+            <img
+              src="/google.png"
+              alt="Google"
+              className="w-5 h-5"
+            />
+            Continue with Google
+          </button>
+
+        </div>
 
         <p className="text-center mt-4 text-sm">
           {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}

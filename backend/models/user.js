@@ -32,6 +32,11 @@ const User = sequelize.define('User', {
       key: 'id',
     },
   },
+  googleId: { // Added googleId field for OAuth
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: true,  
+  },
 }, {
   tableName: 'users',
   timestamps: true,

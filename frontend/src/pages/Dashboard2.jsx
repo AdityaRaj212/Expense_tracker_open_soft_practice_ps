@@ -9,6 +9,7 @@ import AuthPage from "./AuthPage";
 
 import { FiEdit3 } from "react-icons/fi";
 import { MdDeleteOutline } from "react-icons/md";
+import AdminAnalytics from "./AdminAnalytics";
 
 const UserDashboard = () => {
 	const { apiUrl, loading, user } = useAuth();
@@ -221,6 +222,10 @@ const UserDashboard = () => {
 
 	if(!loading && !user){
 		return (<AuthPage />);
+	}
+
+	if(user.role === 'admin'){
+		return (<AdminAnalytics />)
 	}
 
 	return (

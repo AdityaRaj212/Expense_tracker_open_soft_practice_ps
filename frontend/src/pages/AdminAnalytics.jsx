@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { Pie } from 'react-chartjs-2';
 import Loading from "./Loading";
 import AdminNavbar from "../components/AdminNavbar";
+import AuthPage from "./AuthPage";
 
 const AdminAnalytics = () => {
   const { apiUrl, loading, user } = useAuth();
@@ -88,7 +89,7 @@ const AdminAnalytics = () => {
       setExpensesByDate(expensesByDateRes.data.expensesByDate);
       setExpensesByCategory(expensesByCategoryRes.data.expensesByCategory);
       setTopSpenders(topSpendersRes.data);
-      setAvgExpense(avgExpenseRes.data.avgExpensePerUser);
+      setAvgExpense(parseFloat(avgExpenseRes.data.avgExpensePerUser).toFixed(2));
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
